@@ -1,0 +1,137 @@
+import React, { useState } from "react";
+import StatusBadge from "./StatusBadge";
+import "./ReportCard.css";
+
+const ReportCard = ({ report, isAuthority = false, onUpdate, onDelete, onView }) => {
+  const [showModal, setShowModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+
+  const {
+    id,
+    category,
+    categoryLabel,
+    description,
+    locationName,
+    latitude,
+    longitude,
+    mediaFiles,
+    status,
+    createdAt,
+  } = report;
+
+  const formattedDate = new Date(createdAt).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  const openImage = (imgData) => {
+    setSelectedImage(imgData);
+    setShowModal(true);
+  };
+
+  return (
+    <>
+      <div className="report-card">
+        <div className="report-header">
+          <h3 className="report-title">
+            {categoryLabel || category?.replace(/-/g, " ").toUpperCase()}
+          </h3>
+          <StatusBadge status={status} />
+        </div>
+
+        {/* Media Evidence - Visible to Authority */}
+        {mediaFiles && mediaFiles.length > 0 && (
+          <div className="report-media">
+            {mediaFiles.map((file, index) => (
+              <div 
+                key={index} 
+                className="media-thumb"
+                onClick={() => file.type.startsWith("image/") && openImage(file.data)}
+                style={{ cursor: file.type.startsWith("image/") ? "pointer" : "default" }}
+              >
+                {file.type.startsWith("image/") ? (
+                  <img src={file.data} alt="evidence" />
+                ) : (
+                  <div className="video-thumb">
+                    🎬 <br /> Video
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="report-body">
+          <p className="report-description">{description}</p>
+          
+          <div className="report-details">
+            <div className="detail-item">
+              <span className="detail-label">📍 Location:</span>
+              <span className="detail-value">{locationName || "Unknown"}</span>
+            </div>
+            
+            {latitude && longitude && (
+              <div className="detail-item">
+                <span className="detail-label">🌐 Coordinates:</span>
+                <span className="detail-value">
+                  {latitude.toFixed(4)}, {longitude.toFixed(4)}
+                </span>
+              </div>
+            )}
+            
+            <div className="detail-item">
+              <span className="detail-label">📅 Reported:</span>
+              <span className="detail-value">{formattedDate}</span>
+            </div>
+
+            {mediaFiles && mediaFiles.length > 0 && (
+              <div className="detail-item">
+                <span className="detail-label">📎 Evidence:</span>
+                <span className="detail-value">{mediaFiles.length} file(s) attached</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {isAuthority && (
+          <div className="report-actions">
+            <select
+              value={status}
+              onChange={(e) => onUpdate(id, e.target.value)}
+              className="status-select"
+            >
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+              <option value="resolved">Resolved</option>
+            </select>
+
+            <button
+              onClick={() => onDelete && onDelete(id)}
+              className="btn-delete"
+            >
+              Delete
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Image Modal */}
+      {showModal && selectedImage && (
+        <div className="image-modal" onClick={() => setShowModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setShowModal(false)}>
+              ✕
+            </button>
+            <img src={selectedImage} alt="Full size evidence" />
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+export default ReportCard;
