@@ -1,0 +1,97 @@
+document.addEventListener('DOMContentLoaded', () => {
+  const yearSpan = document.getElementById('year');
+  if (yearSpan) yearSpan.textContent = new Date().getFullYear();
+
+  const tabs = document.querySelectorAll('.auth-tab');
+  const panels = document.querySelectorAll('.auth-panel');
+  const messageEl = document.getElementById('auth-message');
+
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const target = tab.dataset.tab;
+      tabs.forEach((t) => t.classList.toggle('active', t === tab));
+      panels.forEach((p) =>
+        p.classList.toggle('active', p.id === `auth-${target}`)
+      );
+      if (messageEl) {
+        messageEl.textContent = '';
+        messageEl.className = 'form-message';
+      }
+    });
+  });
+
+  function setMessage(text, type) {
+    if (!messageEl) return;
+    messageEl.textContent = text;
+    messageEl.className = `form-message ${type}`;
+  }
+
+  const loginForm = document.getElementById('login-form');
+  const signupForm = document.getElementById('signup-form');
+
+  if (signupForm) {
+    signupForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(signupForm);
+      const body = {
+        name: formData.get('name'),
+        email: formData.get('email'),
+        password: formData.get('password'),
+      };
+      try {
+        const res = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setMessage(data.message || 'Error creating account.', 'error');
+          return;
+        }
+        localStorage.setItem('gj_token', data.token);
+        localStorage.setItem('gj_authority_name', data.authority.name);
+        setMessage('Account created. Redirecting to dashboard…', 'success');
+        setTimeout(() => {
+          window.location.href = 'dashboard.html';
+        }, 600);
+      } catch (err) {
+        console.error(err);
+        setMessage('Unable to sign up right now.', 'error');
+      }
+    });
+  }
+
+  if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(loginForm);
+      const body = {
+        email: formData.get('email'),
+        password: formData.get('password'),
+      };
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setMessage(data.message || 'Invalid credentials.', 'error');
+          return;
+        }
+        localStorage.setItem('gj_token', data.token);
+        localStorage.setItem('gj_authority_name', data.authority.name);
+        setMessage('Login successful. Redirecting to dashboard…', 'success');
+        setTimeout(() => {
+          window.location.href = 'dashboard.html';
+        }, 600);
+      } catch (err) {
+        console.error(err);
+        setMessage('Unable to login right now.', 'error');
+      }
+    });
+  }
+});
+
