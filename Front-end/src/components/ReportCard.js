@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import StatusBadge from "./StatusBadge";
 import "./ReportCard.css";
 
 const ReportCard = ({ report, isAuthority = false, onUpdate, onDelete, onView }) => {
   const [showModal, setShowModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [realLocation, setRealLocation] = useState(report.locationName || "");
 
   const {
     id,
@@ -27,6 +28,22 @@ const ReportCard = ({ report, isAuthority = false, onUpdate, onDelete, onView })
     minute: "2-digit",
   });
 
+  // Reverse Geocoding (Lat/Lng → Address)
+  useEffect(() => {
+    if (!locationName && latitude && longitude) {
+      fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+      )
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.display_name) {
+            setRealLocation(data.display_name);
+          }
+        })
+        .catch((err) => console.error("Location fetch error:", err));
+    }
+  }, [latitude, longitude, locationName]);
+
   const openImage = (imgData) => {
     setSelectedImage(imgData);
     setShowModal(true);
@@ -42,12 +59,12 @@ const ReportCard = ({ report, isAuthority = false, onUpdate, onDelete, onView })
           <StatusBadge status={status} />
         </div>
 
-        {/* Media Evidence - Visible to Authority */}
+        {/* Media Evidence */}
         {mediaFiles && mediaFiles.length > 0 && (
           <div className="report-media">
             {mediaFiles.map((file, index) => (
-              <div 
-                key={index} 
+              <div
+                key={index}
                 className="media-thumb"
                 onClick={() => file.type.startsWith("image/") && openImage(file.data)}
                 style={{ cursor: file.type.startsWith("image/") ? "pointer" : "default" }}
@@ -66,13 +83,18 @@ const ReportCard = ({ report, isAuthority = false, onUpdate, onDelete, onView })
 
         <div className="report-body">
           <p className="report-description">{description}</p>
-          
+
           <div className="report-details">
+
+            {/* Location Name */}
             <div className="detail-item">
               <span className="detail-label">📍 Location:</span>
-              <span className="detail-value">{locationName || "Unknown"}</span>
+              <span className="detail-value">
+                {realLocation || locationName || "Loading location..."}
+              </span>
             </div>
-            
+
+            {/* Coordinates */}
             {latitude && longitude && (
               <div className="detail-item">
                 <span className="detail-label">🌐 Coordinates:</span>
@@ -81,7 +103,23 @@ const ReportCard = ({ report, isAuthority = false, onUpdate, onDelete, onView })
                 </span>
               </div>
             )}
-            
+
+            {/* View on Map */}
+            {latitude && longitude && (
+              <div className="detail-item">
+                <span className="detail-label">🗺 Map:</span>
+                <span className="detail-value">
+                  <a
+                    href={`https://www.google.com/maps?q=${latitude},${longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    View on Map
+                  </a>
+                </span>
+              </div>
+            )}
+
             <div className="detail-item">
               <span className="detail-label">📅 Reported:</span>
               <span className="detail-value">{formattedDate}</span>
@@ -90,7 +128,9 @@ const ReportCard = ({ report, isAuthority = false, onUpdate, onDelete, onView })
             {mediaFiles && mediaFiles.length > 0 && (
               <div className="detail-item">
                 <span className="detail-label">📎 Evidence:</span>
-                <span className="detail-value">{mediaFiles.length} file(s) attached</span>
+                <span className="detail-value">
+                  {mediaFiles.length} file(s) attached
+                </span>
               </div>
             )}
           </div>
@@ -123,7 +163,10 @@ const ReportCard = ({ report, isAuthority = false, onUpdate, onDelete, onView })
       {showModal && selectedImage && (
         <div className="image-modal" onClick={() => setShowModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setShowModal(false)}>
+            <button
+              className="modal-close"
+              onClick={() => setShowModal(false)}
+            >
               ✕
             </button>
             <img src={selectedImage} alt="Full size evidence" />

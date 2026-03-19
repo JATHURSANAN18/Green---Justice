@@ -1,5 +1,6 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
+
 import AuthorityDashboard from "./pages/AuthorityDashboard";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -8,34 +9,36 @@ import PublicReport from "./pages/PublicReport";
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
-  
-  if (!token) {
-    return <Navigate to="/login" replace />;
-  }
-  
+  if (!token) return <Navigate to="/login" replace />;
   return children;
 };
 
 function App() {
   return (
-    <Router>
-      <div className="App">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/report" element={<PublicReport />} />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <AuthorityDashboard />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </div>
-    </Router>
+    <div className="App">
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/report" element={<PublicReport />} />
+
+        {/* Dynamic routes */}
+        {/*<Route path="/report/:slug" element={<PublicReport />} />*/}
+        <Route path="/:slug" element={<Home />} />
+
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <AuthorityDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </div>
   );
 }
 

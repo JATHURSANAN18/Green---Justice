@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Navbar from "../components/Navbar";
-import "./PublicReport.css";
+import Navbar from "../components/Navbar"; 
+import LocationPicker from "../components/LocationPicker";
+import "../pages/PublicReport.css";
 
 const PublicReport = () => {
   const navigate = useNavigate();
@@ -64,25 +65,7 @@ const PublicReport = () => {
     setMediaFiles(mediaFiles.filter((_, i) => i !== index));
   };
 
-  const getCurrentLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setFormData({
-            ...formData,
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          });
-          alert("Location captured!");
-        },
-        (error) => {
-          alert("Could not get location. Please enter manually.");
-        }
-      );
-    } else {
-      alert("Geolocation not supported!");
-    }
-  };
+  <LocationPicker formData={formData} setFormData={setFormData} />
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -170,13 +153,8 @@ const PublicReport = () => {
             {/* Location */}
             <div className="form-group">
               <label>📍 Location</label>
-              <button
-                type="button"
-                onClick={getCurrentLocation}
-                className="location-btn"
-              >
-                📍 Get Current Location
-              </button>
+              {/* Location selected from map */}
+<             LocationPicker formData={formData} setFormData={setFormData} />
 
               <input
                 type="text"

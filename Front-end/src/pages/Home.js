@@ -13,8 +13,8 @@ const Home = () => {
           <p>Report issues in your community and help make your city a better place.</p>
           
           <div className="hero-buttons">
-            <Link to="/login" className="btn-primary">
-              Login to Report
+            <Link to="/report" className="btn-primary">
+              🚀 Report Violation
             </Link>
             <Link to="/dashboard" className="btn-secondary">
               Go to Dashboard
