@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar"; 
 import LocationPicker from "../components/LocationPicker";
+import { createReport } from '../api';
 import "../pages/PublicReport.css";
 
 const PublicReport = () => {
@@ -65,7 +66,18 @@ const PublicReport = () => {
     setMediaFiles(mediaFiles.filter((_, i) => i !== index));
   };
 
-  <LocationPicker formData={formData} setFormData={setFormData} />
+  // Map frontend categories to backend DB enum strings
+  const categoryToViolationType = {
+    "illegal-dumping": "Illegal waste disposal",
+    "water-pollution": "Water pollution",
+    "air-pollution": "Air pollution",
+    "deforestation": "Deforestation",
+    "noise": "Noise pollution",
+    "wildlife": "Other",
+    "chemical": "Other",
+    "landfill": "Other",
+    "other": "Other"
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -77,31 +89,36 @@ const PublicReport = () => {
 
     setLoading(true);
 
-    setTimeout(() => {
-      const newReport = {
-        id: Date.now(),
-        category: formData.category,
-        categoryLabel: violationCategories.find((c) => c.value === formData.category)?.label,
-        description: formData.description || "No description provided",
-        latitude: formData.latitude,
-        longitude: formData.longitude,
-        locationName: formData.locationName || "Unknown Location",
-        mediaFiles: mediaFiles,
-        status: "pending",
-        createdAt: new Date().toISOString(),
+    try {
+      const violationType = categoryToViolationType[formData.category] || "Other";
+      
+      // Determine file info from first file (used for inline send)
+      const firstFile = mediaFiles.length > 0 ? mediaFiles[0] : null;
+
+      const payload = {
+        user_id: null,
+        violation_type: violationType,
+        description: formData.description,
+        location_name: formData.locationName,
+        longitude: formData.longitude || null,
+        latitude: formData.latitude || null,
+        file_type: firstFile ? firstFile.type : "",
+        file_url: firstFile ? firstFile.data : ""
       };
 
-      const existingReports = JSON.parse(localStorage.getItem("reports") || "[]");
-      existingReports.unshift(newReport);
-      localStorage.setItem("reports", JSON.stringify(existingReports));
+      await createReport(payload);
 
       setSuccess(true);
-      setLoading(false);
-
+      
       setTimeout(() => {
         navigate("/");
       }, 2000);
-    }, 1500);
+    } catch (err) {
+      console.error("Submission error:", err);
+      alert(err.response?.data?.error || "Failed to submit report. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (success) {
