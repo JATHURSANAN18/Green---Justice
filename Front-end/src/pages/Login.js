@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import { login } from '../api';
 import "./Login.css";
 
 const Login = () => {
@@ -24,36 +25,21 @@ const Login = () => {
     setError("");
     setLoading(true);
 
-    // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
     try {
-      // Get users from localStorage
-      const users = JSON.parse(localStorage.getItem("users") || "[]");
+      const response = await login({
+        email: formData.email,
+        password: formData.password
+      });
 
-      // Find matching user
-      const user = users.find(
-        (u) => u.email === formData.email && u.password === formData.password
-      );
-
-      if (!user) {
-        setError("Invalid email or password!");
-        setLoading(false);
-        return;
-      }
-
-      // Create token (simple simulation)
-      const token = `token_${Date.now()}`;
+      const { token, authority } = response.data;
       
-      // Save to localStorage (exclude password)
-      const { password, ...userWithoutPassword } = user;
       localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(userWithoutPassword));
+      localStorage.setItem("user", JSON.stringify(authority));
       
       // Redirect to dashboard
       navigate("/dashboard");
     } catch (err) {
-      setError("Login failed. Please try again.");
+      setError(err.response?.data?.error || "Login failed. Please try again.");
     } finally {
       setLoading(false);
     }
