@@ -1,78 +1,135 @@
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const pool = require('../config/db');
+import db from '../database/db.js';
 
-async function loginAuthority(req, res, next) {
-  try {
-    const { email, password } = req.body;
+const SRI_LANKAN_DISTRICTS = [
+    'Ampara', 'Anuradhapura', 'Badulla', 'Batticaloa', 'Colombo', 
+    'Galle', 'Gampaha', 'Hambantota', 'Jaffna', 'Kalutara', 
+    'Kandy', 'Kegalle', 'Kilinochchi', 'Kurunegala', 'Mannar', 
+    'Matale', 'Matara', 'Moneragala', 'Mullaitivu', 'Nuwara Eliya', 
+    'Polonnaruwa', 'Puttalam', 'Ratnapura', 'Trincomalee', 'Vavuniya'
+];
 
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
+export const registerAuthority = async (req, res) => {
+    try {
+        const { name, email, password, region } = req.body;
+        
+        if (!name || !email || !password || !region) {
+            return res.status(400).json({ error: 'All fields are required, including district' });
+        }
+
+        if (!SRI_LANKAN_DISTRICTS.includes(region)) {
+            return res.status(400).json({ error: 'Invalid Sri Lankan district selected' });
+        }
+
+        const [existing] = await db.query('SELECT * FROM Authorities WHERE email = ?', [email]);
+        if (existing.length > 0) {
+            return res.status(409).json({ error: 'Email already registered' });
+        }
+
+        // In a real application, hash the password here.
+        const [result] = await db.query(
+            'INSERT INTO Authorities (name, email, password_hash, region) VALUES (?, ?, ?, ?)',
+            [name, email, password, region]
+        );
+
+        res.status(201).json({ message: 'Authority registered successfully', authority_id: result.insertId });
+    } catch (error) {
+        console.error('Registration error:', error.message);
+        res.status(500).json({ error: 'Failed to register authority: ' + error.message });
     }
+};
 
-    const [rows] = await pool.query('SELECT * FROM authorities WHERE email = ?', [email]);
-    if (rows.length === 0) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+export const loginAuthority = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        // In a real application, implement proper password hashing comparison
+        const [rows] = await db.query('SELECT * FROM Authorities WHERE email = ? AND password_hash = ?', [email, password]);
+        
+        if (rows.length === 0) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        // Update last active
+        await db.query('UPDATE Authorities SET last_active = CURRENT_TIMESTAMP WHERE authority_id = ?', [rows[0].authority_id]);
+
+        res.status(200).json({ message: 'Login successful', token: 'mock-jwt-token', authority: rows[0] });
+    } catch (error) {
+        console.error('Login error:', error.message);
+        res.status(500).json({ error: 'Authentication failed: ' + error.message });
     }
+};
 
-    const authority = rows[0];
-    const matched = await bcrypt.compare(password, authority.password_hash);
-    if (!matched) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+export const getDashboardStats = async (req, res) => {
+    try {
+        const [total] = await db.query('SELECT COUNT(*) as count FROM Complaints');
+        const [resolved] = await db.query('SELECT COUNT(*) as count FROM Complaints WHERE status = "Resolved"');
+        const [pending] = await db.query('SELECT COUNT(*) as count FROM Complaints WHERE status != "Resolved"');
+
+        res.status(200).json({
+            total: total[0].count,
+            resolved: resolved[0].count,
+            pending: pending[0].count
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch dashboard stats' });
     }
+};
 
-    const token = jwt.sign(
-      {
-        id: authority.id,
-        email: authority.email,
-        role: authority.role
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+export const getComplaints = async (req, res) => {
+    try {
+        const [rows] = await db.query(`
+            SELECT 
+                c.complaint_id, c.violation_type, c.description, c.status, c.report_date,
+                l.location_name, l.latitude, l.longitude,
+                e.file_type, e.file_url 
+            FROM Complaints c
+            LEFT JOIN Locations l ON c.complaint_id = l.complaint_id
+            LEFT JOIN Evidences e ON c.complaint_id = e.complaint_id
+            ORDER BY c.report_date DESC
+        `);
 
-    res.json({
-      message: 'Login successful',
-      token,
-      authority: {
-        id: authority.id,
-        name: authority.name,
-        email: authority.email,
-        role: authority.role,
-        department: authority.department
-      }
-    });
-  } catch (error) {
-    next(error);
-  }
-}
+        // Group rows by complaint_id
+        const complaintsMap = rows.reduce((acc, row) => {
+            const id = row.complaint_id;
+            if (!acc[id]) {
+                acc[id] = {
+                    id: id,
+                    complaint_id: id,
+                    categoryLabel: row.violation_type,
+                    description: row.description,
+                    status: row.status,
+                    createdAt: row.report_date,
+                    locationName: row.location_name,
+                    latitude: row.latitude ? parseFloat(row.latitude) : null,
+                    longitude: row.longitude ? parseFloat(row.longitude) : null,
+                    mediaFiles: []
+                };
+            }
+            if (row.file_url) {
+                // Check if this evidence is already added (in case of multiple joins)
+                const alreadyExists = acc[id].mediaFiles.some(m => m.data === row.file_url);
+                if (!alreadyExists) {
+                    acc[id].mediaFiles.push({
+                        type: row.file_type || 'image/jpeg',
+                        data: row.file_url
+                    });
+                }
+            }
+            return acc;
+        }, {});
 
-async function createAuthority(req, res, next) {
-  try {
-    const { name, email, password, department, role } = req.body;
-
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: 'name, email and password are required' });
+        res.status(200).json(Object.values(complaintsMap));
+    } catch (error) {
+        console.error('Failed to fetch complaints:', error.message);
+        res.status(500).json({ error: 'Failed to fetch complaints' });
     }
+};
 
-    const [exists] = await pool.query('SELECT id FROM authorities WHERE email = ?', [email]);
-    if (exists.length > 0) {
-      return res.status(400).json({ message: 'Authority email already exists' });
+export const deleteComplaint = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await db.query('DELETE FROM Complaints WHERE complaint_id = ?', [id]);
+        res.status(200).json({ message: 'Complaint deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to delete complaint' });
     }
-
-    const hash = await bcrypt.hash(password, 10);
-    const [result] = await pool.query(
-      'INSERT INTO authorities (name, email, password_hash, department, role) VALUES (?, ?, ?, ?, ?)',
-      [name, email, hash, department || null, role === 'admin' ? 'admin' : 'authority']
-    );
-
-    res.status(201).json({
-      message: 'Authority account created',
-      authority_id: result.insertId
-    });
-  } catch (error) {
-    next(error);
-  }
-}
-
-module.exports = { loginAuthority, createAuthority };
+};
