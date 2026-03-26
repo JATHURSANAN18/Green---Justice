@@ -4,6 +4,17 @@
   font-size: 0.85rem;
   font-weight: 500;
   text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.status-not-viewed {
+  background-color: #ffe8cc;
+  color: #d9480f;
+}
+
+.status-in-progress {
+  background-color: #e3fafc;
+  color: #0b7285;
 }
 
 .status-pending {
