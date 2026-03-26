@@ -1,10 +1,12 @@
-const express = require('express');
-const { loginAuthority, createAuthority } = require('../controllers/authController');
-const { protect, adminOnly } = require('../middlewares/authMiddleware');
+import express from 'express';
+import { registerAuthority, loginAuthority, getDashboardStats, getComplaints, deleteComplaint } from '../controllers/authorityController.js';
 
 const router = express.Router();
 
+router.post('/register', registerAuthority);
 router.post('/login', loginAuthority);
-router.post('/create-authority', protect, adminOnly, createAuthority);
+router.get('/dashboard', getDashboardStats);
+router.get('/complaints', getComplaints);
+router.delete('/complaintas/:id', deleteComplaint);
 
-module.exports = router;
+export default router;
