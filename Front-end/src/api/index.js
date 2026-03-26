@@ -15,14 +15,14 @@ API.interceptors.request.use((req) => {
 });
 
 // Auth endpoints
-export const login = (credentials) => API.post("/auth/login", credentials);
-export const register = (userData) => API.post("/auth/register", userData);
+export const login = (credentials) => API.post("/authorities/login", credentials);
+export const register = (userData) => API.post("/authorities/register", userData);
 
 // Report endpoints
-export const getReports = () => API.get("/reports");
-export const getReportById = (id) => API.get(`/reports/${id}`);
-export const createReport = (data) => API.post("/reports", data);
-export const updateReport = (id, data) => API.put(`/reports/${id}`, data);
-export const deleteReport = (id) => API.delete(`/reports/${id}`);
+export const getReports = () => API.get("/authorities/complaints");
+export const getReportById = (id) => API.get(`/complaints/${id}/status`);
+export const createReport = (data) => API.post("/complaints", data);
+export const updateReport = (id, data) => API.patch(`/complaints/${id}/status`, data);
+export const deleteReport = (id) => API.delete(`/authorities/complaints/${id}`);
 
 export default API;
