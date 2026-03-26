@@ -88,10 +88,7 @@ const ReportCard = ({ report, isAuthority = false, onUpdate, onDelete, onView })
 
             {/* Location Name */}
             <div className="detail-item">
-              <span className="detail-label">📍 Location:</span>
-              <span className="detail-value">
-                {realLocation || locationName || "Loading location..."}
-              </span>
+              
             </div>
 
             {/* Coordinates */}
