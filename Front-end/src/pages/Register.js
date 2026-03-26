@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import { register } from '../api';
 import "./Register.css";
 
 const Register = () => {
@@ -32,37 +33,17 @@ const Register = () => {
 
     setLoading(true);
 
-    // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
     try {
-      // Get existing users from localStorage
-      const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
-
-      // Check if email already exists
-      const emailExists = existingUsers.some(
-        (user) => user.email === formData.email
-      );
-
-      if (emailExists) {
-        setError("Email already registered!");
-        setLoading(false);
-        return;
-      }
-
-      // Create new user (without confirmPassword)
-      const { confirmPassword, ...newUser } = formData;
-      newUser.id = Date.now(); // Generate unique ID
-      newUser.createdAt = new Date().toISOString();
-
-      // Save to localStorage
-      existingUsers.push(newUser);
-      localStorage.setItem("users", JSON.stringify(existingUsers));
+      await register({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password
+      });
 
       alert("Registration successful! Please login.");
       navigate("/login");
     } catch (err) {
-      setError("Registration failed. Please try again.");
+      setError(err.response?.data?.error || "Registration failed. Please try again.");
     } finally {
       setLoading(false);
     }
