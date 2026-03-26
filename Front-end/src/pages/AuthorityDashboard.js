@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Navbar from "../components/Navbar";
 import ReportCard from "../components/ReportCard";
+import { getReports, updateReport, deleteReport as apiDeleteReport } from "../api/index";
 import "./AuthorityDashboard.css";
 
 const AuthorityDashboard = () => {
@@ -14,11 +15,11 @@ const AuthorityDashboard = () => {
     fetchReports();
   }, []);
 
-  const fetchReports = () => {
+  const fetchReports = async () => {
     try {
       setLoading(true);
-      const storedReports = JSON.parse(localStorage.getItem("reports") || "[]");
-      setReports(storedReports);
+      const res = await getReports();
+      setReports(res.data || []);
       setError("");
     } catch (err) {
       setError("Failed to fetch reports. Please try again.");
@@ -28,25 +29,29 @@ const AuthorityDashboard = () => {
     }
   };
 
-  const updateStatus = (id, status) => {
+  const updateStatus = async (id, status) => {
     try {
-      const updatedReports = reports.map((report) =>
-        report.id === id ? { ...report, status } : report
+      await updateReport(id, { status });
+      setReports((prev) =>
+        prev.map((report) =>
+          (report.complaint_id === id || report.id === id)
+            ? { ...report, status }
+            : report
+        )
       );
-      setReports(updatedReports);
-      localStorage.setItem("reports", JSON.stringify(updatedReports));
     } catch (err) {
       alert("Failed to update status");
       console.error("Error updating status:", err);
     }
   };
 
-  const deleteReport = (id) => {
+  const deleteReport = async (id) => {
     try {
       if (window.confirm("Are you sure you want to delete this report?")) {
-        const updatedReports = reports.filter((report) => report.id !== id);
-        setReports(updatedReports);
-        localStorage.setItem("reports", JSON.stringify(updatedReports));
+        await apiDeleteReport(id);
+        setReports((prev) =>
+          prev.filter((report) => report.complaint_id !== id && report.id !== id)
+        );
       }
     } catch (err) {
       alert("Failed to delete report");
@@ -55,28 +60,30 @@ const AuthorityDashboard = () => {
   };
 
   const viewReportDetails = (id) => {
-    const report = reports.find((r) => r.id === id);
+    const report = reports.find(
+      (r) => r.complaint_id === id || r.id === id
+    );
     if (report) {
       alert(`
 📋 Report Details
 
-Category: ${report.categoryLabel || report.category}
-Location: ${report.locationName}
-Coordinates: ${report.latitude}, ${report.longitude}
-Description: ${report.description}
+Type: ${report.violation_type || report.categoryLabel || report.category}
 Status: ${report.status}
-Date: ${new Date(report.createdAt).toLocaleString()}
+Date: ${new Date(report.report_date || report.createdAt).toLocaleString()}
       `);
     }
   };
 
+  const getReportId = (report) => report.complaint_id || report.id;
+
   const filteredReports = reports.filter((report) => {
     const matchesFilter = filter === "all" || report.status === filter;
-    const matchesSearch =
-      (report.categoryLabel || report.category)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.locationName?.toLowerCase().includes(searchTerm.toLowerCase());
-
+    const searchTarget = (
+      (report.violation_type || report.categoryLabel || report.category || "") +
+      (report.description || "") +
+      (report.locationName || "")
+    ).toLowerCase();
+    const matchesSearch = searchTarget.includes(searchTerm.toLowerCase());
     return matchesFilter && matchesSearch;
   });
 
@@ -85,6 +92,7 @@ Date: ${new Date(report.createdAt).toLocaleString()}
     pending: reports.filter((r) => r.status === "pending").length,
     approved: reports.filter((r) => r.status === "approved").length,
     resolved: reports.filter((r) => r.status === "resolved").length,
+    notViewed: reports.filter((r) => r.status === "Not Viewed").length,
   };
 
   if (loading) {
@@ -111,8 +119,8 @@ Date: ${new Date(report.createdAt).toLocaleString()}
             <p>Total Reports</p>
           </div>
           <div className="stat-card pending">
-            <h3>{stats.pending}</h3>
-            <p>Pending</p>
+            <h3>{stats.notViewed}</h3>
+            <p>Not Viewed</p>
           </div>
           <div className="stat-card approved">
             <h3>{stats.approved}</h3>
@@ -139,6 +147,7 @@ Date: ${new Date(report.createdAt).toLocaleString()}
             className="filter-select"
           >
             <option value="all">All Status</option>
+            <option value="Not Viewed">Not Viewed</option>
             <option value="pending">Pending</option>
             <option value="approved">Approved</option>
             <option value="rejected">Rejected</option>
@@ -160,12 +169,12 @@ Date: ${new Date(report.createdAt).toLocaleString()}
           ) : (
             filteredReports.map((report) => (
               <ReportCard
-                key={report.id}
+                key={getReportId(report)}
                 report={report}
                 isAuthority={true}
-                onUpdate={updateStatus}
-                onDelete={deleteReport}
-                onView={viewReportDetails}
+                onUpdate={(id, status) => updateStatus(id, status)}
+                onDelete={(id) => deleteReport(id)}
+                onView={(id) => viewReportDetails(id)}
               />
             ))
           )}
