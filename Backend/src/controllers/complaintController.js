@@ -1,266 +1,89 @@
-const pool = require('../config/db');
-const generateComplaintCode = require('../utils/generateComplaintCode');
-const { emitComplaintUpdate } = require('../services/socketService');
+import db from '../database/db.js';
 
-async function createComplaint(req, res, next) {
-  try {
-    const {
-      violation_type_id,
-      description,
-      district,
-      landmark,
-      latitude,
-      longitude,
-      language,
-      size_level,
-      reporter_name,
-      reporter_phone
-    } = req.body;
+export const submitComplaint = async (req, res) => {
+    try {
+        const { user_id, violation_type, description, location_name, longitude, latitude, file_type, file_url } = req.body;
 
-    if (!violation_type_id || !district || !latitude || !longitude) {
-      return res.status(400).json({
-        message: 'violation_type_id, district, latitude, longitude are required'
-      });
+        // Start transaction
+        const connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        try {
+            // Insert Complaint
+            const [complaintResult] = await connection.query(
+                'INSERT INTO Complaints (user_id, violation_type, description, status, report_date) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)',
+                [user_id || null, violation_type, description || '', 'Not Viewed']
+            );
+            const complaintId = complaintResult.insertId;
+
+            // Insert Location
+            if (longitude && latitude) {
+                await connection.query(
+                    'INSERT INTO Locations (complaint_id, location_name, longitude, latitude) VALUES (?, ?, ?, ?)',
+                    [complaintId, location_name || '', longitude, latitude]
+                );
+            }
+
+            // Insert Evidence
+            if (file_url) {
+                await connection.query(
+                    'INSERT INTO Evidences (complaint_id, file_type, file_url) VALUES (?, ?, ?)',
+                    [complaintId, file_type || 'image', file_url]
+                );
+            }
+
+            // Commit transaction
+            await connection.commit();
+            
+            res.status(201).json({ 
+                message: 'Complaint submitted successfully', 
+                complaint_id: complaintId 
+            });
+        } catch (error) {
+            await connection.rollback();
+            console.error('Error in complaint transaction:', error.message);
+            throw error;
+        } finally {
+            connection.release();
+        }
+
+    } catch (error) {
+        console.error('Failed to submit complaint:', error.message);
+        res.status(500).json({ error: 'Failed to submit complaint: ' + error.message });
     }
+};
 
-    const complaintCode = generateComplaintCode();
+export const getComplaintStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [rows] = await db.query('SELECT status FROM Complaints WHERE complaint_id = ?', [id]);
+        
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Complaint not found' });
+        }
 
-    const [result] = await pool.query(
-      `INSERT INTO complaints
-      (complaint_code, violation_type_id, description, district, landmark, latitude, longitude, language, size_level, reporter_name, reporter_phone)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        complaintCode,
-        violation_type_id,
-        description || null,
-        district,
-        landmark || null,
-        latitude,
-        longitude,
-        language || 'en',
-        size_level || 'medium',
-        reporter_name || null,
-        reporter_phone || null
-      ]
-    );
-
-    const complaintId = result.insertId;
-
-    if (req.file) {
-      const fileType = req.file.mimetype.startsWith('image') ? 'image' : 'video';
-      const fileUrl = `/uploads/${req.file.filename}`;
-      await pool.query(
-        'INSERT INTO evidence (complaint_id, file_url, file_type) VALUES (?, ?, ?)',
-        [complaintId, fileUrl, fileType]
-      );
+        res.status(200).json({ status: rows[0].status });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch status' });
     }
+};
 
-    res.status(201).json({
-      message: 'Complaint submitted successfully',
-      complaint_id: complaintId,
-      complaint_code: complaintCode
-    });
-  } catch (error) {
-    next(error);
-  }
-}
+export const updateComplaintStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status, authority_id, description } = req.body;
 
-async function getAllComplaints(req, res, next) {
-  try {
-    const {
-      status,
-      district,
-      search,
-      sortBy = 'newest',
-      page = 1,
-      limit = 10
-    } = req.query;
+        // Update complaint
+        await db.query('UPDATE Complaints SET status = ? WHERE complaint_id = ?', [status, id]);
 
-    const safePage = Math.max(parseInt(page, 10) || 1, 1);
-    const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 100);
-    const offset = (safePage - 1) * safeLimit;
+        // Insert status update history
+        await db.query(
+            'INSERT INTO StatusUpdates (complaint_id, updated_by_authority_id, status, description, timestamp) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)',
+            [id, authority_id, status, description || 'Status changed']
+        );
 
-    let whereSql = 'WHERE c.is_deleted = FALSE';
-    const params = [];
-
-    if (status) {
-      whereSql += ' AND c.status = ?';
-      params.push(status);
+        res.status(200).json({ message: 'Status updated successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update complaint status' });
     }
-
-    if (district) {
-      whereSql += ' AND c.district = ?';
-      params.push(district);
-    }
-
-    if (search) {
-      whereSql += ' AND (c.complaint_code LIKE ? OR c.description LIKE ? OR c.landmark LIKE ? OR vt.name LIKE ?)';
-      params.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
-    }
-
-    let orderSql = 'ORDER BY c.updated_at DESC';
-    if (sortBy === 'oldest') orderSql = 'ORDER BY c.created_at ASC';
-    if (sortBy === 'highly_reported') orderSql = 'ORDER BY c.report_count DESC, c.updated_at DESC';
-    if (sortBy === 'size') orderSql = `ORDER BY FIELD(c.size_level, 'large', 'medium', 'small'), c.updated_at DESC`;
-
-    const countQuery = `
-      SELECT COUNT(*) AS total
-      FROM complaints c
-      JOIN violation_types vt ON c.violation_type_id = vt.id
-      ${whereSql}
-    `;
-
-    const listQuery = `
-      SELECT c.*, vt.name AS violation_type
-      FROM complaints c
-      JOIN violation_types vt ON c.violation_type_id = vt.id
-      ${whereSql}
-      ${orderSql}
-      LIMIT ? OFFSET ?
-    `;
-
-    const [countRows] = await pool.query(countQuery, params);
-    const [rows] = await pool.query(listQuery, [...params, safeLimit, offset]);
-
-    res.json({
-      page: safePage,
-      limit: safeLimit,
-      total: countRows[0].total,
-      data: rows
-    });
-  } catch (error) {
-    next(error);
-  }
-}
-
-async function getComplaintById(req, res, next) {
-  try {
-    const { id } = req.params;
-
-    const [rows] = await pool.query(
-      `SELECT c.*, vt.name AS violation_type
-       FROM complaints c
-       JOIN violation_types vt ON c.violation_type_id = vt.id
-       WHERE c.id = ? AND c.is_deleted = FALSE`,
-      [id]
-    );
-
-    if (rows.length === 0) {
-      return res.status(404).json({ message: 'Complaint not found' });
-    }
-
-    const complaint = rows[0];
-
-    await pool.query('UPDATE complaints SET report_count = report_count + 1 WHERE id = ?', [id]);
-
-    const [evidenceRows] = await pool.query('SELECT * FROM evidence WHERE complaint_id = ?', [id]);
-    const [statusRows] = await pool.query(
-      `SELECT l.*, a.name AS updated_by_name
-       FROM complaint_status_logs l
-       LEFT JOIN authorities a ON l.updated_by_authority_id = a.id
-       WHERE l.complaint_id = ?
-       ORDER BY l.created_at DESC`,
-      [id]
-    );
-
-    res.json({
-      complaint: {
-        ...complaint,
-        report_count: complaint.report_count + 1
-      },
-      evidence: evidenceRows,
-      status_logs: statusRows
-    });
-  } catch (error) {
-    next(error);
-  }
-}
-
-async function updateComplaintStatus(req, res, next) {
-  try {
-    const { id } = req.params;
-    const { status, note } = req.body;
-    const allowed = ['not_viewed', 'in_progress', 'resolved', 'rejected'];
-
-    if (!allowed.includes(status)) {
-      return res.status(400).json({ message: 'Invalid status value' });
-    }
-
-    const [rows] = await pool.query(
-      'SELECT id, complaint_code, status FROM complaints WHERE id = ? AND is_deleted = FALSE',
-      [id]
-    );
-
-    if (rows.length === 0) {
-      return res.status(404).json({ message: 'Complaint not found' });
-    }
-
-    const complaint = rows[0];
-    await pool.query('UPDATE complaints SET status = ? WHERE id = ?', [status, id]);
-    await pool.query(
-      `INSERT INTO complaint_status_logs
-      (complaint_id, updated_by_authority_id, old_status, new_status, note)
-      VALUES (?, ?, ?, ?, ?)`,
-      [id, req.user.id, complaint.status, status, note || null]
-    );
-
-    emitComplaintUpdate(complaint.complaint_code, {
-      complaint_id: Number(id),
-      complaint_code: complaint.complaint_code,
-      old_status: complaint.status,
-      new_status: status,
-      note: note || null,
-      updated_at: new Date().toISOString()
-    });
-
-    res.json({ message: 'Complaint status updated successfully' });
-  } catch (error) {
-    next(error);
-  }
-}
-
-async function getComplaintStatusByCode(req, res, next) {
-  try {
-    const { complaintCode } = req.params;
-
-    const [rows] = await pool.query(
-      `SELECT complaint_code, status, updated_at, created_at
-       FROM complaints
-       WHERE complaint_code = ? AND is_deleted = FALSE`,
-      [complaintCode]
-    );
-
-    if (rows.length === 0) {
-      return res.status(404).json({ message: 'Complaint not found' });
-    }
-
-    res.json(rows[0]);
-  } catch (error) {
-    next(error);
-  }
-}
-
-async function deleteComplaint(req, res, next) {
-  try {
-    const { id } = req.params;
-    const [rows] = await pool.query('SELECT id FROM complaints WHERE id = ? AND is_deleted = FALSE', [id]);
-
-    if (rows.length === 0) {
-      return res.status(404).json({ message: 'Complaint not found' });
-    }
-
-    await pool.query('UPDATE complaints SET is_deleted = TRUE WHERE id = ?', [id]);
-    res.json({ message: 'Complaint deleted successfully' });
-  } catch (error) {
-    next(error);
-  }
-}
-
-module.exports = {
-  createComplaint,
-  getAllComplaints,
-  getComplaintById,
-  updateComplaintStatus,
-  getComplaintStatusByCode,
-  deleteComplaint
 };
