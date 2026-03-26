@@ -4,14 +4,14 @@
   align-items: center;
   justify-content: center;
   padding: 2rem;
-  background-color: #f5f7fa;
+  background-color: #e9f7ef; /* Soft greenish tint */
 }
 
 .register-card {
-  background: white;
+  background: #fafffa; /* Light mint tint */
   padding: 2.5rem;
   border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
   width: 100%;
   max-width: 400px;
 }
