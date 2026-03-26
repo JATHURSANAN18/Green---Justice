@@ -49,9 +49,13 @@ const ReportCard = ({ report, isAuthority = false, onUpdate, onDelete, onView })
     setShowModal(true);
   };
 
+  const violationClass = (categoryLabel || category || "other")
+    .toLowerCase()
+    .replace(/\s+/g, "-");
+
   return (
     <>
-      <div className="report-card">
+      <div className={`report-card card-${violationClass}`}>
         <div className="report-header">
           <h3 className="report-title">
             {categoryLabel || category?.replace(/-/g, " ").toUpperCase()}
