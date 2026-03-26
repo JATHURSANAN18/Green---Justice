@@ -1,12 +1,14 @@
 .home-container {
   min-height: 100vh;
+  background-color: #f0fdf4; /* Subtle entry green/blue hint */
 }
 
 .hero-section {
-  background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+  background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
   color: white;
-  padding: 4rem 2rem;
+  padding: 6rem 1rem;
   text-align: center;
+  clip-path: ellipse(150% 100% at 50% 0%); /* Stylish curve */
 }
 
 .hero-section h1 {
@@ -81,7 +83,40 @@
 
 .feature-icon {
   font-size: 3rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  display: inline-block;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 50%;
+  transition: transform 0.3s;
+}
+
+.feature-card:hover .feature-icon {
+  transform: rotate(10deg) scale(1.1);
+}
+
+.feature-submit {
+  border-bottom: 5px solid #3498db;
+}
+
+.feature-submit .feature-icon {
+  background: #e3f2fd;
+}
+
+.feature-track {
+  border-bottom: 5px solid #9b59b6;
+}
+
+.feature-track .feature-icon {
+  background: #f3e5f5;
+}
+
+.feature-resolve {
+  border-bottom: 5px solid #27ae60;
+}
+
+.feature-resolve .feature-icon {
+  background: #e8f5e9;
 }
 
 .feature-card h3 {
@@ -94,12 +129,14 @@
 }
 
 .stats-section {
-  background-color: #f8f9fa;
-  padding: 3rem 2rem;
+  background-color: #e8f6f3; /* Light Teal background */
+  padding: 5rem 2rem;
   display: flex;
   justify-content: center;
-  gap: 4rem;
+  gap: 5rem;
   flex-wrap: wrap;
+  border-top: 1px solid #d1eae6;
+  border-bottom: 1px solid #d1eae6;
 }
 
 .stat-item {
