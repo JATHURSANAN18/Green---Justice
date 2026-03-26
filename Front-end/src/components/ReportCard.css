@@ -2,8 +2,55 @@
   background: white;
   border-radius: 12px;
   padding: 1.5rem;
-  margin-bottom: 1rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem; /* Increased spacing between cards */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-left: 8px solid #ccc;
+  transition: transform 0.2s ease;
+}
+
+.report-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Violation Type Specific Coloring (Full Card) */
+.report-card.card-illegal-waste-disposal {
+  background-color: #fff1dc; /* More vivid Orange tint */
+  border-left-color: #f39c12;
+}
+
+.report-card.card-air-pollution {
+  background-color: #f0f0f0; /* More vivid Grey tint */
+  border-left-color: #95a5a6;
+}
+
+.report-card.card-water-pollution {
+  background-color: #d6ebff; /* More vivid Light Blue tint */
+  border-left-color: #3498db;
+}
+
+.report-card.card-deforestation {
+  background-color: #dafbe0; /* More vivid Light Green tint */
+  border-left-color: #27ae60;
+}
+
+.report-card.card-noise-pollution {
+  background-color: #fffbcf; /* More vivid Yellow tint */
+  border-left-color: #f1c40f;
+}
+
+.report-card.card-other {
+  background-color: #f8f8f8;
+  border-left-color: #bdc3c7;
+}
+
+/* Ensure details section is transparent or subtle so card color shows through */
+.report-card .report-details {
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(2px);
+  padding: 1.25rem;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .report-header {
@@ -62,11 +109,6 @@
   line-height: 1.5;
 }
 
-.report-details {
-  background: #f8f9fa;
-  padding: 1rem;
-  border-radius: 8px;
-}
 
 .detail-item {
   display: flex;
