@@ -4,6 +4,14 @@ import Navbar from "../components/Navbar";
 import { register } from '../api';
 import "./Register.css";
 
+const SRI_LANKAN_DISTRICTS = [
+  "Ampara", "Anuradhapura", "Badulla", "Batticaloa", "Colombo", 
+  "Galle", "Gampaha", "Hambantota", "Jaffna", "Kalutara", 
+  "Kandy", "Kegalle", "Kilinochchi", "Kurunegala", "Mannar", 
+  "Matale", "Matara", "Moneragala", "Mullaitivu", "Nuwara Eliya", 
+  "Polonnaruwa", "Puttalam", "Ratnapura", "Trincomalee", "Vavuniya"
+];
+
 const Register = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -11,6 +19,7 @@ const Register = () => {
     email: "",
     password: "",
     confirmPassword: "",
+    district: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -37,7 +46,8 @@ const Register = () => {
       await register({
         name: formData.name,
         email: formData.email,
-        password: formData.password
+        password: formData.password,
+        region: formData.district
       });
 
       alert("Registration successful! Please login.");
@@ -71,6 +81,24 @@ const Register = () => {
                 placeholder="Enter your full name"
                 required
               />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="district">District</label>
+              <select
+                id="district"
+                name="district"
+                value={formData.district}
+                onChange={handleChange}
+                required
+              >
+                <option value="">Select your district</option>
+                {SRI_LANKAN_DISTRICTS.map((district) => (
+                  <option key={district} value={district}>
+                    {district}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="form-group">
