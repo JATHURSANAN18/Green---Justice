@@ -1,9 +1,11 @@
 import express from 'express';
-import { triggerReminders, getStatusTimeline } from '../controllers/notificationController.js';
+import { submitComplaint, getComplaintStatus, updateComplaintStatus } from '../controllers/reportController.js';
 
 const router = express.Router();
 
-router.post('/trigger-reminders', triggerReminders);
-router.get('/timeline/:complaintId', getStatusTimeline);
+router.post('/', submitComplaint);
+router.get('/:id/status', getComplaintStatus);
+router.patch('/:id/status', updateComplaintStatus);
+router.post('/:id/status', updateComplaintStatus);
 
 export default router;
