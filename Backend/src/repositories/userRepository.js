@@ -1,4 +1,4 @@
-import db from '../database/db.js';
+import db from '../../database/db.js';
 
 class UserRepository {
     async createUser(preferredLanguage) {
