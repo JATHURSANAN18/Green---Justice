@@ -1,5 +1,4 @@
-import db from '../database/db.js';
-
+import db from '../../database/db.js';
 class NotificationRepository {
     async getOldUnresolvedComplaints() {
         const [complaints] = await db.query(`
