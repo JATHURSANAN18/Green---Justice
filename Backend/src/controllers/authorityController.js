@@ -76,16 +76,27 @@ export const getDashboardStats = async (req, res) => {
 
 export const getComplaints = async (req, res) => {
     try {
-        const [rows] = await db.query(`
+        const { district } = req.query;
+        let query = `
             SELECT 
                 c.complaint_id, c.violation_type, c.description, c.status, c.report_date,
-                l.location_name, l.latitude, l.longitude,
+                l.location_name, l.latitude, l.longitude, l.district,
                 e.file_type, e.file_url 
             FROM Complaints c
             LEFT JOIN Locations l ON c.complaint_id = l.complaint_id
             LEFT JOIN Evidences e ON c.complaint_id = e.complaint_id
-            ORDER BY c.report_date DESC
-        `);
+        `;
+        
+        const queryParams = [];
+        // For now, show all complaints - remove district filter
+        // if (district) {
+        //     query += ` WHERE l.district = ?`;
+        //     queryParams.push(district);
+        // }
+        
+        query += ` ORDER BY c.report_date DESC`;
+
+        const [rows] = await db.query(query, queryParams);
 
         // Group rows by complaint_id
         const complaintsMap = rows.reduce((acc, row) => {
@@ -127,9 +138,19 @@ export const getComplaints = async (req, res) => {
 export const deleteComplaint = async (req, res) => {
     try {
         const { id } = req.params;
-        await db.query('DELETE FROM Complaints WHERE complaint_id = ?', [id]);
+        console.log(`Backend: Attempting to delete complaint_id: ${id}`);
+        
+        const [result] = await db.query('DELETE FROM Complaints WHERE complaint_id = ?', [id]);
+        
+        if (result.affectedRows === 0) {
+            console.log(`Backend: No complaint found with ID: ${id}`);
+            return res.status(404).json({ error: 'Complaint not found' });
+        }
+
+        console.log(`Backend: Successfully deleted complaint_id: ${id}`);
         res.status(200).json({ message: 'Complaint deleted successfully' });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to delete complaint' });
+        console.error('Delete error:', error.message);
+        res.status(500).json({ error: 'Failed to delete complaint: ' + error.message });
     }
 };
