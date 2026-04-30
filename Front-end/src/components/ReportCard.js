@@ -89,10 +89,10 @@ const ReportCard = ({ report, isAuthority = false, onUpdate, onDelete, onView })
           <p className="report-description">{description}</p>
 
           <div className="report-details">
-
-            {/* Location Name */}
+            {/* Location Title/Address */}
             <div className="detail-item">
-              
+              <span className="detail-label">📍 Location:</span>
+              <span className="detail-value">{realLocation || locationName || "Pinned on Map"}</span>
             </div>
 
             {/* Coordinates */}
@@ -141,7 +141,7 @@ const ReportCard = ({ report, isAuthority = false, onUpdate, onDelete, onView })
           <div className="report-actions">
             <select
               value={status}
-              onChange={(e) => onUpdate(id, e.target.value)}
+              onChange={(e) => onUpdate(report.complaint_id || id, e.target.value)}
               className="status-select"
             >
               <option value="pending">Pending</option>
@@ -151,7 +151,7 @@ const ReportCard = ({ report, isAuthority = false, onUpdate, onDelete, onView })
             </select>
 
             <button
-              onClick={() => onDelete && onDelete(id)}
+              onClick={() => onDelete && onDelete(report.complaint_id || id)}
               className="btn-delete"
             >
               Delete
