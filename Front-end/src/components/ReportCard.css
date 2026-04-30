@@ -2,7 +2,8 @@
   background: white;
   border-radius: 12px;
   padding: 1.5rem;
-  margin-bottom: 2rem; /* Increased spacing between cards */
+  margin-bottom: 50rem;
+  /* Further increased spacing between cards for better readability */
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   border-left: 8px solid #ccc;
   transition: transform 0.2s ease;
@@ -15,28 +16,48 @@
 
 /* Violation Type Specific Coloring (Full Card) */
 .report-card.card-illegal-waste-disposal {
-  background-color: #fff1dc; /* More vivid Orange tint */
+  background-color: #fff1dc;
+  /* More vivid Orange tint */
   border-left-color: #f39c12;
 }
 
 .report-card.card-air-pollution {
-  background-color: #f0f0f0; /* More vivid Grey tint */
+  background-color: #f0f0f0;
+  /* More vivid Grey tint */
   border-left-color: #95a5a6;
 }
 
 .report-card.card-water-pollution {
-  background-color: #d6ebff; /* More vivid Light Blue tint */
+  background-color: #d6ebff;
+  /* More vivid Light Blue tint */
   border-left-color: #3498db;
 }
 
 .report-card.card-deforestation {
-  background-color: #dafbe0; /* More vivid Light Green tint */
+  background-color: #dafbe0;
+  /* More vivid Light Green tint */
   border-left-color: #27ae60;
 }
 
 .report-card.card-noise-pollution {
-  background-color: #fffbcf; /* More vivid Yellow tint */
+  background-color: #fffbcf;
+  /* More vivid Yellow tint */
   border-left-color: #f1c40f;
+}
+
+.report-card.card-wildlife-poaching {
+  background-color: #ffe4e4;
+  border-left-color: #e74c3c;
+}
+
+.report-card.card-chemical-waste {
+  background-color: #f0e4ff;
+  border-left-color: #9b59b6;
+}
+
+.report-card.card-illegal-landfill {
+  background-color: #eae7e4;
+  border-left-color: #7f8c8d;
 }
 
 .report-card.card-other {
@@ -125,7 +146,13 @@
 .detail-value {
   color: #555;
 }
-
+.detail-value a {
+  color:blue;
+}
+.detail-value a:hover {
+  color:red;
+  text-decoration: underline;
+}
 .report-actions {
   display: flex;
   gap: 0.75rem;
