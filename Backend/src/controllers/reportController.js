@@ -1,52 +1,12 @@
-import db from '../database/db.js';
+import reportService from '../services/reportService.js';
 
 export const submitComplaint = async (req, res) => {
     try {
-        const { user_id, violation_type, description, location_name, longitude, latitude, district, file_type, file_url } = req.body;
-
-        // Start transaction
-        const connection = await db.getConnection();
-        await connection.beginTransaction();
-
-        try {
-            // Insert Complaint
-            const [complaintResult] = await connection.query(
-                'INSERT INTO Complaints (user_id, violation_type, description, status, report_date) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)',
-                [user_id || null, violation_type, description || '', 'Not Viewed']
-            );
-            const complaintId = complaintResult.insertId;
-
-            // Insert Location
-            if (longitude && latitude) {
-                await connection.query(
-                    'INSERT INTO Locations (complaint_id, location_name, longitude, latitude, district) VALUES (?, ?, ?, ?, ?)',
-                    [complaintId, location_name || '', longitude, latitude, district || null]
-                );
-            }
-
-            // Insert Evidence
-            if (file_url) {
-                await connection.query(
-                    'INSERT INTO Evidences (complaint_id, file_type, file_url) VALUES (?, ?, ?)',
-                    [complaintId, file_type || 'image', file_url]
-                );
-            }
-
-            // Commit transaction
-            await connection.commit();
-            
-            res.status(201).json({ 
-                message: 'Complaint submitted successfully', 
-                complaint_id: complaintId 
-            });
-        } catch (error) {
-            await connection.rollback();
-            console.error('Error in complaint transaction:', error.message);
-            throw error;
-        } finally {
-            connection.release();
-        }
-
+        const complaintId = await reportService.sumbitReportData(req.body);
+        res.status(201).json({ 
+            message: 'Complaint submitted successfully', 
+            complaint_id: complaintId 
+        });
     } catch (error) {
         console.error('Failed to submit complaint:', error.message);
         res.status(500).json({ error: 'Failed to submit complaint: ' + error.message });
@@ -55,15 +15,12 @@ export const submitComplaint = async (req, res) => {
 
 export const getComplaintStatus = async (req, res) => {
     try {
-        const { id } = req.params;
-        const [rows] = await db.query('SELECT status FROM Complaints WHERE complaint_id = ?', [id]);
-        
-        if (rows.length === 0) {
-            return res.status(404).json({ error: 'Complaint not found' });
-        }
-
-        res.status(200).json({ status: rows[0].status });
+        const status = await reportService.getStatus(req.params.id);
+        res.status(200).json({ status });
     } catch (error) {
+        if (error.message === 'Complaint not found') {
+            return res.status(404).json({ error: error.message });
+        }
         res.status(500).json({ error: 'Failed to fetch status' });
     }
 };
@@ -74,23 +31,15 @@ export const updateComplaintStatus = async (req, res) => {
         const { status, authority_id, description } = req.body;
         console.log(`Backend: Update status request for complaint_id: ${id} to ${status}`);
 
-        // Update complaint
-        const [result] = await db.query('UPDATE Complaints SET status = ? WHERE complaint_id = ?', [status, id]);
-
-        if (result.affectedRows === 0) {
-            console.log(`Backend: No complaint found to update status for ID: ${id}`);
-            return res.status(404).json({ error: 'Complaint not found' });
-        }
-
-        // Insert status update history
-        await db.query(
-            'INSERT INTO StatusUpdates (complaint_id, updated_by_authority_id, status, description, timestamp) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)',
-            [id, authority_id || null, status, description || 'Status changed']
-        );
+        await reportService.updateStatus(id, status, authority_id, description);
 
         console.log(`Backend: Successfully updated status for complaint_id: ${id}`);
         res.status(200).json({ message: 'Status updated successfully' });
     } catch (error) {
+        if (error.message === 'Complaint not found') {
+            console.log(`Backend: No complaint found to update status for ID: ${req.params.id}`);
+            return res.status(404).json({ error: error.message });
+        }
         console.error('Update status error:', error.message);
         res.status(500).json({ error: 'Failed to update complaint status: ' + error.message });
     }
