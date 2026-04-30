@@ -4,10 +4,10 @@ import dotenv from 'dotenv';
 import db from './database/db.js';
 
 // Import Routes
-import userRoutes from './routes/userRoutes.js';
-import authorityRoutes from './routes/authorityRoutes.js';
-import reportRoutes from './routes/reportRoutes.js';
-import notificationRoutes from './routes/notificationRoutes.js';
+import userRoutes from './src/routes/userRoutes.js';
+import authorityRoutes from './src/routes/authorityRoutes.js';
+import reportRoutes from './src/routes/reportRoutes.js';
+import notificationRoutes from './src/routes/notificationRoutes.js';
 
 dotenv.config();
 
