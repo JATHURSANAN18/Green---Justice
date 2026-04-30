@@ -18,7 +18,11 @@ const AuthorityDashboard = () => {
   const fetchReports = async () => {
     try {
       setLoading(true);
-      const res = await getReports();
+      // Get logged in authority's district
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const district = user.region;
+      
+      const res = await getReports(district);
       setReports(res.data || []);
       setError("");
     } catch (err) {
@@ -30,38 +34,54 @@ const AuthorityDashboard = () => {
   };
 
   const updateStatus = async (id, status) => {
+    const updateId = Number(id);
+    // Keep a backup for rollback
+    const previousReports = [...reports];
+    
+    // Optimistic Update
+    setReports((prev) =>
+      prev.map((report) =>
+        (Number(report.complaint_id || report.id) === updateId)
+          ? { ...report, status }
+          : report
+      )
+    );
+
     try {
       await updateReport(id, { status });
-      setReports((prev) =>
-        prev.map((report) =>
-          (report.complaint_id === id || report.id === id)
-            ? { ...report, status }
-            : report
-        )
-      );
     } catch (err) {
-      alert("Failed to update status");
+      const errMsg = err.response?.data?.error || err.response?.data?.message || err.message;
+      alert("Failed to update status: " + errMsg);
       console.error("Error updating status:", err);
+      // Rollback on failure
+      setReports(previousReports);
     }
   };
 
   const deleteReport = async (id) => {
+    console.log("Frontend: Requesting delete for ID:", id);
+    const delId = Number(id);
     try {
       if (window.confirm("Are you sure you want to delete this report?")) {
-        await apiDeleteReport(id);
+        await apiDeleteReport(delId);
         setReports((prev) =>
-          prev.filter((report) => report.complaint_id !== id && report.id !== id)
+          prev.filter(
+            (report) => 
+              Number(report.complaint_id || report.id) !== delId
+          )
         );
       }
     } catch (err) {
-      alert("Failed to delete report");
+      const errMsg = err.response?.data?.error || err.response?.data?.message || err.message;
+      alert("Failed to delete report: " + errMsg);
       console.error("Error deleting report:", err);
     }
   };
 
   const viewReportDetails = (id) => {
+    const viewId = Number(id);
     const report = reports.find(
-      (r) => r.complaint_id === id || r.id === id
+      (r) => Number(r.complaint_id || r.id) === viewId
     );
     if (report) {
       alert(`
