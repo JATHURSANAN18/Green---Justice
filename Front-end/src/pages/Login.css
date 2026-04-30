@@ -1,101 +1,67 @@
-.login-container {
-  min-height: calc(100vh - 64px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-  background-color: #eef2f7; /* Soft blue-grey */
-}
+import React from "react";
+import { Link } from "react-router-dom";
+import Navbar from "../components/Navbar";
+import "./Home.css";
 
-.login-card {
-  background: #fdfdfd; /* Off-white */
-  padding: 2.5rem;
-  border-radius: 12px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-  width: 100%;
-  max-width: 400px;
-}
+const Home = () => {
+  return (
+    <>
+      <Navbar />
+      <div className="home-container">
+        <div className="hero-section">
+          <h1>Welcome to Report System</h1>
+          <p>Report issues in your community and help make your city a better place.</p>
+          
+          <div className="hero-buttons">
+            <Link to="/report" className="btn-primary">
+              🚀 Report Violation
+            </Link>
+            <Link to="/dashboard" className="btn-secondary">
+              Go to Dashboard
+            </Link>
+          </div>
+        </div>
 
-.login-card h2 {
-  color: #2c3e50;
-  margin: 0 0 0.5rem;
-  text-align: center;
-}
+        <div className="features-section">
+          <h2>How It Works</h2>
+          <div className="features-grid">
+            <div className="feature-card feature-submit">
+              <div className="feature-icon">📝</div>
+              <h3>Submit Report</h3>
+              <p>Fill out a simple form to report any issue in your area.</p>
+            </div>
+            
+            <div className="feature-card feature-track">
+              <div className="feature-icon">👁️</div>
+              <h3>Track Status</h3>
+              <p>Monitor the status of your reports in real-time.</p>
+            </div>
+            
+            <div className="feature-card feature-resolve">
+              <div className="feature-icon">✅</div>
+              <h3>Get Resolution</h3>
+              <p>Authorities review and resolve reported issues.</p>
+            </div>
+          </div>
+        </div>
 
-.login-subtitle {
-  color: #7f8c8d;
-  text-align: center;
-  margin-bottom: 1.5rem;
-}
+        <div className="stats-section">
+          <div className="stat-item">
+            <h3>1000+</h3>
+            <p>Reports Submitted</p>
+          </div>
+          <div className="stat-item">
+            <h3>95%</h3>
+            <p>Resolution Rate</p>
+          </div>
+          <div className="stat-item">
+            <h3>24/7</h3>
+            <p>Active Monitoring</p>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
 
-.form-group {
-  margin-bottom: 1.25rem;
-}
-
-.form-group label {
-  display: block;
-  color: #2c3e50;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-}
-
-.form-group input {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 1rem;
-  box-sizing: border-box;
-}
-
-.form-group input:focus {
-  outline: none;
-  border-color: #3498db;
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-}
-
-.login-btn {
-  width: 100%;
-  padding: 0.875rem;
-  background-color: #3498db;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-.login-btn:hover:not(:disabled) {
-  background-color: #2980b9;
-}
-
-.login-btn:disabled {
-  background-color: #95a5a6;
-  cursor: not-allowed;
-}
-
-.error-message {
-  background-color: #f8d7da;
-  color: #721c24;
-  padding: 0.75rem;
-  border-radius: 6px;
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
-}
-
-.register-link {
-  text-align: center;
-  margin-top: 1.5rem;
-  color: #7f8c8d;
-}
-
-.register-link a {
-  color: #3498db;
-  text-decoration: none;
-}
-
-.register-link a:hover {
-  text-decoration: underline;
-}
+export default Home;
