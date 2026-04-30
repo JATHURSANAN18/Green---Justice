@@ -1,4 +1,4 @@
-import db from '../database/db.js';
+import db from '../../database/db.js';
 import reportRepository from '../repositories/reportRepository.js';
 
 class ReportService {
