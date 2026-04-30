@@ -7,6 +7,7 @@ router.post('/register', registerAuthority);
 router.post('/login', loginAuthority);
 router.get('/dashboard', getDashboardStats);
 router.get('/complaints', getComplaints);
-router.delete('/complaintas/:id', deleteComplaint);
+router.delete('/complaints/:id', deleteComplaint);
+router.post('/complaints/:id/delete', deleteComplaint);
 
 export default router;
