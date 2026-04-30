@@ -53,6 +53,8 @@ export default function LocationPicker({ formData, setFormData }) {
     <MapContainer
       center={[7.8731, 80.7718]} // Sri Lanka center
       zoom={7}
+      minZoom={7}
+      maxBounds={[[5.9, 79.5], [9.9, 81.9]]}
       style={{ height: "400px", width: "100%" }}
     >
       <TileLayer
