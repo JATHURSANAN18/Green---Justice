@@ -1,4 +1,4 @@
-import db from '../database/db.js';
+import db from '../../database/db.js';
 
 class ReportRepository {
     async createComplaint(connection, user_id, violation_type, description) {
