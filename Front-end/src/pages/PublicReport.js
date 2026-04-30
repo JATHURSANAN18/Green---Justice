@@ -66,16 +66,16 @@ const PublicReport = () => {
     setMediaFiles(mediaFiles.filter((_, i) => i !== index));
   };
 
-  // Map frontend categories to backend DB enum strings
+  // Map frontend categories to backend DB strings
   const categoryToViolationType = {
     "illegal-dumping": "Illegal waste disposal",
     "water-pollution": "Water pollution",
     "air-pollution": "Air pollution",
     "deforestation": "Deforestation",
     "noise": "Noise pollution",
-    "wildlife": "Other",
-    "chemical": "Other",
-    "landfill": "Other",
+    "wildlife": "Wildlife Poaching",
+    "chemical": "Chemical Waste",
+    "landfill": "Illegal Landfill",
     "other": "Other"
   };
 
@@ -84,6 +84,11 @@ const PublicReport = () => {
 
     if (!formData.category) {
       alert("Please select a violation type!");
+      return;
+    }
+
+    if (!formData.latitude || !formData.longitude) {
+      alert("Please pin the violation location on the map!");
       return;
     }
 
@@ -171,10 +176,11 @@ const PublicReport = () => {
             <div className="form-group">
               <label>📍 Location</label>
               {/* Location selected from map */}
-<             LocationPicker formData={formData} setFormData={setFormData} />
+<             LocationPicker formData={formData} setFormData={setFormData} required/>
 
               <input
                 type="text"
+                
                 name="locationName"
                 value={formData.locationName}
                 onChange={handleChange}
@@ -196,6 +202,7 @@ const PublicReport = () => {
                 <input
                   type="file"
                   id="media-upload"
+                  required
                   onChange={handleMediaChange}
                   accept="image/*,video/*"
                   multiple
