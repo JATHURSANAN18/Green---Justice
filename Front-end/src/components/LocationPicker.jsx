@@ -16,35 +16,49 @@ L.Icon.Default.mergeOptions({
 });
 
 
-const redIcon = new L.Icon({
-  iconUrl:
-    "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
-  shadowUrl:
-    "https://unpkg.com/leaflet@1.9.3/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
+const locationIcon = new L.divIcon({
+  html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#E83D39" width="40px" height="40px" style="filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.4));">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+        </svg>`,
+  className: "custom-location-icon",
+  iconSize: [40, 40],
+  iconAnchor: [20, 40],
+  popupAnchor: [0, -40],
 });
 
 function LocationMarker({ setFormData, formData }) {
   const [position, setPosition] = useState(null);
 
   useMapEvents({
-    click(e) {
+    async click(e) {
       const { lat, lng } = e.latlng;
-
       setPosition([lat, lng]);
 
-      setFormData({
-        ...formData,
+      let district = "";
+      try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
+        const data = await response.json();
+        
+        // Extract the district name gracefully using Sri Lankan OSM conventions
+        if (data && data.address) {
+          const region = data.address.state_district || data.address.county || data.address.state || "";
+          district = region.replace(" District", "");
+        }
+      } catch (err) {
+        console.error("Reverse geocoding failed", err);
+      }
+
+      setFormData((prev) => ({
+        ...prev,
         latitude: lat,
         longitude: lng,
-      });
+        district: district
+      }));
     },
   });
 
   return position === null ? null : (
-    <Marker position={position} icon={redIcon} />
+    <Marker position={position} icon={locationIcon} />
   );
 }
 
