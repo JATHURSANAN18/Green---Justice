@@ -23,7 +23,9 @@ const AuthorityDashboard = () => {
       const district = user.region;
       
       const res = await getReports(district);
-      setReports(res.data || []);
+      const fetchedReports = res.data || [];
+      const sortedReports = fetchedReports.sort((a, b) => new Date(b.report_date || b.createdAt) - new Date(a.report_date || a.createdAt));
+      setReports(sortedReports);
       setError("");
     } catch (err) {
       setError("Failed to fetch reports. Please try again.");
