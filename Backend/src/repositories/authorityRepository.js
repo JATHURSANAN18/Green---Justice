@@ -1,5 +1,4 @@
-import db from '../database/db.js';
-
+import db from '../../database/db.js';
 class AuthorityRepository {
     async findByEmail(email) {
         const [rows] = await db.query('SELECT * FROM Authorities WHERE email = ?', [email]);
