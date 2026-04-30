@@ -28,4 +28,3 @@ class NotificationRepository {
 }
 
 export default new NotificationRepository();
-
